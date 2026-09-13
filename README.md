@@ -2,6 +2,7 @@
 
 [![GitHub repo](https://img.shields.io/badge/GitHub-TokenAuthDemo-181717?logo=github)](https://github.com/nguyenuthien0209/TokenAuthDemo)
 [![build](https://github.com/nguyenuthien0209/TokenAuthDemo/actions/workflows/build.yml/badge.svg)](https://github.com/nguyenuthien0209/TokenAuthDemo/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 An ASP.NET Core 8 Web API secured by **Duende IdentityServer** — a real OAuth2 / OpenID
 Connect authorization server, not a hand-rolled token scheme. Register a user, log in
@@ -42,6 +43,10 @@ threshold via Duende's Community Edition; see
 for current terms before deploying this anywhere real. [OpenIddict](https://documentation.openiddict.com/)
 is a free, MIT-licensed alternative implementing the same OAuth2/OIDC standards if a
 license isn't an option.
+
+(To be clear: this repo's own [MIT license](LICENSE) covers the code written here —
+it says nothing about Duende IdentityServer itself, which you still consume under its
+own separate license terms as a NuGet dependency, the same as any other package.)
 
 ### The `demo-client`
 
