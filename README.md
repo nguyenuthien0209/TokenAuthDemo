@@ -15,6 +15,71 @@ against Duende's standard `/connect/token` endpoint to get a real signed JWT, an
 > .NET. See "Duende IdentityServer" below for what that means architecturally and
 > licensing-wise.
 
+## High-level design
+
+### Sequence diagram — register, login, call the API, refresh, revoke
+
+Issuer and API live in the same process, but are shown as separate participants below
+since they're logically distinct (`AddIdentityServer` vs. `Controllers/SecureController.cs`,
+bridged in-process by `AddLocalApi()` — see "Duende IdentityServer" below).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant Auth as AuthController<br/>(/api/auth/register)
+    participant IdS as Duende IdentityServer<br/>(/connect/token, /connect/revocation)
+    participant Id as ASP.NET Core Identity<br/>(UserManager / SignInManager)
+    participant Api as SecureController<br/>(/api/secure/*)
+
+    C->>Auth: POST /api/auth/register<br/>{username, email, password}
+    Auth->>Id: UserManager.CreateAsync(user)
+    Id-->>Auth: IdentityResult
+    Auth-->>C: 200 RegisterResponse (or 400 ErrorResponse)
+
+    C->>IdS: POST /connect/token<br/>grant_type=password, username, password
+    IdS->>Id: ResourceOwnerPasswordValidator<br/>(checks credentials)
+    Id-->>IdS: credentials valid
+    IdS-->>C: 200 { access_token, refresh_token, expires_in: 900 }
+
+    C->>Api: GET /api/secure/me<br/>Authorization: Bearer access_token
+    Api->>IdS: AddLocalApi() in-process token validation
+    IdS-->>Api: ClaimsPrincipal (sub, role, scope, ...)
+    Api-->>C: 200 { claims } (or 401 / 403)
+
+    C->>IdS: POST /connect/token<br/>grant_type=refresh_token
+    IdS-->>C: 200 new access_token + rotated refresh_token<br/>(old refresh_token now invalid)
+
+    C->>IdS: POST /connect/revocation<br/>token=refresh_token
+    IdS-->>C: 200 (token revoked)
+```
+
+### Activity diagram — token lifecycle
+
+```mermaid
+flowchart TD
+    Start([Start]) --> Register[POST /api/auth/register]
+    Register --> RegOk{Username/email<br/>already taken?}
+    RegOk -- Yes --> RegFail[400 ErrorResponse]
+    RegOk -- No --> Login[POST /connect/token<br/>grant_type=password]
+    Login --> LoginOk{Credentials valid?}
+    LoginOk -- No --> LoginFail[400 invalid_grant]
+    LoginOk -- Yes --> HasTokens[Access token + refresh token issued]
+    HasTokens --> CallApi[Call /api/secure/*<br/>with access token]
+    CallApi --> Expired{Access token expired?<br/>15 min lifetime}
+    Expired -- No --> CallApi
+    Expired -- Yes --> Refresh[POST /connect/token<br/>grant_type=refresh_token]
+    Refresh --> RefreshOk{Refresh token valid<br/>and not already used?}
+    RefreshOk -- Yes --> NewTokens[New access token +<br/>rotated refresh token]
+    NewTokens --> CallApi
+    RefreshOk -- No --> Reject[400 invalid_grant]
+    HasTokens --> Revoke[POST /connect/revocation]
+    Revoke --> LoggedOut([End: tokens invalidated])
+    Reject --> LoggedOut
+    RegFail --> End1([End])
+    LoginFail --> End2([End])
+```
+
 ## Duende IdentityServer
 
 [Duende IdentityServer](https://duendesoftware.com/products/identityserver) is a
