@@ -1,6 +1,7 @@
 # TokenAuthDemo
 
 [![GitHub repo](https://img.shields.io/badge/GitHub-TokenAuthDemo-181717?logo=github)](https://github.com/nguyenuthien0209/TokenAuthDemo)
+[![build](https://github.com/nguyenuthien0209/TokenAuthDemo/actions/workflows/build.yml/badge.svg)](https://github.com/nguyenuthien0209/TokenAuthDemo/actions/workflows/build.yml)
 
 An ASP.NET Core 8 Web API secured by **Duende IdentityServer** — a real OAuth2 / OpenID
 Connect authorization server, not a hand-rolled token scheme. Register a user, log in
