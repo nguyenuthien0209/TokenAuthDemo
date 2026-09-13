@@ -1,0 +1,44 @@
+@host = http://localhost:5171
+
+### Register
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "email": "alice@example.com",
+  "password": "SuperSecret123"
+}
+
+### Login (Duende IdentityServer's standard OAuth2 token endpoint — note the
+### form-urlencoded body, not JSON. offline_access is what makes it return a
+### refresh_token; api1 is what makes the access_token work on /api/secure/*.)
+POST {{host}}/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=demo-client&username=alice&password=SuperSecret123&scope=openid profile roles api1 offline_access
+
+### Call a protected endpoint (replace TOKEN with access_token from Login)
+GET {{host}}/api/secure/me
+Authorization: Bearer TOKEN
+
+### Admin-only endpoint — 403 for alice; log in as admin/Admin123! (seeded on
+### startup in Development, see Program.cs) to get a 200 here instead.
+GET {{host}}/api/secure/admin-only
+Authorization: Bearer TOKEN
+
+### Refresh (replace REFRESH_TOKEN with refresh_token from Login — rotates on every use)
+POST {{host}}/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&client_id=demo-client&refresh_token=REFRESH_TOKEN
+
+### Revoke (replace REFRESH_TOKEN)
+POST {{host}}/connect/revocation
+Content-Type: application/x-www-form-urlencoded
+
+client_id=demo-client&token=REFRESH_TOKEN&token_type_hint=refresh_token
+
+### Discovery document — what a real OAuth2/OIDC client uses to find all of
+### the above endpoints automatically instead of hardcoding them.
+GET {{host}}/.well-known/openid-configuration

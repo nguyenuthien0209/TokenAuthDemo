@@ -1,0 +1,9 @@
+bin/
+obj/
+*.user
+.vs/
+
+# Duende IdentityServer's auto-generated dev signing key (AddDeveloperSigningCredential).
+# Private key material — regenerated automatically on first run if missing, never commit it.
+tempkey.jwk
+tempkey.rsa
